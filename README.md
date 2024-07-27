@@ -19,7 +19,7 @@ The following code is an infinite loop(??).
 ```asm
 jmp $
 ```
-Here `$` is a pointer to current label. Thus is the same as 
+Here `$` is a pointer to current label. Its is the same as 
 ```asm
 .loop:
   jmp .loop
@@ -41,10 +41,10 @@ bootable, we only fill `510 - ($-$$)` bytes with `0`s.
 jmp $
 times (510 - ($-$$)) db 0
 db 0x55
-db 0xaa ; little endian format is followed thus 0x55 comes before 0xaa.
+db 0xaa ; little endian format is followed => 0x55 comes before 0xaa.
 ```
 
-Since one word equals to two bytes we can use the `dw`(define word) keyword as follows:
+Since one word equals to two bytes we can use the `dw`(define word) keyword.
 ```asm
 jmp $
 times (510 - ($-$$)) db 0
@@ -52,9 +52,9 @@ dw 0xaa55
 ```
 
 ### Execution
-To execute the code we will use `nasm` and 'qemu'.
-- `_nasm_` is an assembler that we will use to convert our assembly code to machine code(binary) and write it down to the readable(floppy disk)
-- `_qemu_` is an emulator software we will use to check if the code execution worked.
+To execute the code we will use `nasm` and `qemu`.
+- `nasm` is an assembler that we will use to convert our assembly code to machine code(binary) and write it down to the readable(floppy disk)
+- `qemu` is an emulator software we will use to check if the code execution worked.
 
 Assemble the code to a binary
 ```bash
@@ -79,7 +79,7 @@ The message `Booting from Hard Disk...` will be displayed on the emulator.
 
 ## Print characters
 ### Interrupts
-`Interrupts` are exactly what they mean. 
+**Interrupts** are exactly what they mean. 
 The CPU controls various processes, but conditionally some events need immediate attention 
 thus singnals called as interrupts are sent to the CPU. After which the CPU stops its current 
 task and executes spicific task called as interrupt handler.
@@ -175,7 +175,6 @@ message: ; the variable only points to the character 'H'
 times (510 - ($-$$)) db 0
 dw 0xaa55
 ```
-
 Running this will print "Hello world!" onto the screen.
 
 
