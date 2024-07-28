@@ -177,4 +177,153 @@ dw 0xaa55
 ```
 Running this will print "Hello world!" onto the screen.
 
+# 32 BIT MODE
+## Global Descriptor Table(GDT)
+`GDT` is the convention used to define the segments and privilages for each segment in
+the RAM. Here we use `Descriptors` to describe the properties of each segment we want. For this 
+example we will use the Flat-Memory-Model to address the memory(popular ones being segmentation
+and paging models). \
+
+To define a segment we set the following properties:
+- **Base Pointer(loc)**: The starting address of the segment.
+- **Limit(size)**: The size of the segment starting from the offset.
+- **Present**: This is a single bit that tells us whether the segment is being used. 
+- **Priviledge**: This is a two bit that defines the proority of the segment. `00` being the most powerful.
+- **Type(T)**: This single bit tells us whether the segment is begin used for code or data or free space or whatever. `1` corresponds to code or data segment. 
+- **Type Flags(Tf)**: A 4 bit telling us the following:
+  - **Tf & 0b1000**: This bit is set when the segment is being used as a code segment.
+  - **Tf & 0b100**: 
+    - For Code: Setting this bit allows lower Priviledged segments to access this.
+    - For Data: This defines the direction of growth. `0` -> expand up segment.
+  - **Tf & 0b10**: 
+    - For Code: Whether its readable?
+    - For Data: Whether its writable?
+  - **Tf & 0b1**: Whether managed by the CPU?
+- **Other Flags(Of)**: 
+  - **Of & 0b1000**: 1, if set, this multiplies our limit by 4 K (i.e. 16*16*16), so our 0xffff would become 0xffff000 (i.e. shift 3 hex digits to the left), allowing our segment to span 4 Gb of memory.
+  - **Of & 0b100**: Whether this segment using 32 bit memory? 32 bits moving in parallel in the bus architecture.
+  - **Of & 0b10**: Whether this segment using 64 bit memory? 64 bits moving in parallel in the bus architecture.
+  - **Of & 0b10**: Some AVL???
+
+To understand this better look at the values of the Descriptors for code segment(example) and
+understand why the values were set.
+
+### Code Segment Descriptor
+
+```
+Base Pointer: 0x0000 -> if you want to start the segment at 0.
+Limit: 0xfffff -> 20 bits, end of the segment from offet.
+Present: 0b1 -> we are using the segment, hence 1.
+Priviledge: 0b00 -> set it to the highest proority.
+Type: 0b1 -> This is a code segment hence 1.
+Type Flags: 0b1010 
+Other Flags: 0b1100 
+```
+
+### The Table
+
+Now that we know the values the descriptors we can define the GDT in assembly. \
+A really weird convention for defining the GDT in assembly is used.\
+
+- First, we define the null descriptor, this is just 8 bytes of zeros. This padding is done for no reason.
+- Then we define the code and data segments with the values we got earlier.
+
+```asm
+gdt_begin:
+
+null_descriptor:
+  ; this is just a padding added
+  times 8 db 0 
+
+code_descriptor:
+  ; data we have to put together
+  
+  ; - base pointer: 0b 00000000 00000000 00000000 00000000 (32 bits)
+  ; - limit: 0b 1111 1111 1111 1111 1111 (0xfffff, 20 bits)
+  ; - present, priviledge, type: 0b1001
+  ; - type flags: 0b1010
+  ; - other flags: 0b1100
+
+  ; here the values break down and assemble in the following fashion
+  
+  dw 0xffff ; first 16 bits of the limit
+  times 3 db 0 ; first 24 bits of the base pointer
+  db 0b1001 ; present, priviledge, type
+  db 0b1010 ; type flags
+  db 0b1100 ; other flags
+  db 0xf ; rest 4 bits of the limit
+  times 1 db 0 ; rest 8 bits of the limit
+
+data_descriptor:
+  ; data we have to put together
+  
+  ; - base pointer: 0b 00000000 00000000 00000000 00000000 (32 bits)
+  ; - limit: 0b 1111 1111 1111 1111 1111 (0xfffff, 20 bits)
+  ; - present, priviledge, type: 0b1001
+  ; - type flags: 0b0010
+  ; - other flags: 0b1100
+
+  ; here the values break down and assemble in the following fashion
+  
+  dw 0xffff ; first 16 bits of the limit
+  times 3 db 0 ; first 24 bits of the base pointer
+  db 0b1001 ; present, priviledge, type
+  db 0b0010 ; type flags
+  db 0b1100 ; other flags
+  db 0xf ; rest 4 bits of the limit
+  times 1 db 0 ; rest 8 bits of the limit
+
+gdt_end:
+```
+
+Finally we can define the descriptor with labels
+
+```asm
+gdt_descriptor:
+  ; this will contain the size first then the start of the GDT
+  dw gdt_begin - gdt_end - 1 ; size
+  dd gdt_begin ; start
+```
+
+```asm
+; define the position of the code and data segments with respect to the gdt_begin
+; equ is used to define constants
+CODE_SEGMENT equ code_descriptor - gdt_begin
+DATA_SEGMENT equ data_descriptor - gdt_begin
+```
+
+### Entering 32 bit protected mode
+The first thing we have to do is disable interrupts using the cli (clear interrupt)
+instruction, which means the CPU will simply ignore any future interrupts that may
+happen, at least until interrupts are later enabled. \
+Then we tell the CPU about the GDT by running the `lgdt`(load GDT) command. \
+To make the switch to protected mode we set the last bit of the control register to 1.
+
+```asm
+cli ; clear all the interrrupts
+
+lgdt [gdt_descriptor]
+
+; indirectly changing the last bit of cr0 to 1
+mov eax, cr0 
+or eax, 0x1
+mov cr0, eax
+```
+
+Finally we can jump to 32 bit protected mode by performing a far jump.
+
+```asm
+jmp CODE_SEGMENT:protected_mode_main
+.
+.
+.
+.
+protected_mode_main:
+  jpm $ ; infinite loop at the start of the main function in protected mode
+```
+
+### Printing in protected mode
+
+
+
 
