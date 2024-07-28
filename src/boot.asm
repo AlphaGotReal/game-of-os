@@ -81,13 +81,6 @@ code_descriptor:
   ; - other flags: 0b1100
 
   ; here the values break down and assemble in the following fashion
-  
-;   dw 0xffff
-;   dw 0x0 
-;   db 0x0
-;   db 0b10011010
-;   db 0b11001111
-;   db 0x0
 
   dw 0xffff ; first 16 bits of the limit
   times 3 db 0x0 ; first 24 bits of the base pointer

@@ -322,3 +322,59 @@ protected_mode_main:
   jpm $ ; infinite loop at the start of the main function in protected mode
 ```
 
+### Printing strings onto the screen
+
+Now that we have entered the 32 bit mode we can use COLORS to print onto the screen. We utilise the 
+prebuilt VGA to display characters on the screen. \
+First the Video memory address is defined as `0xb8000`. This is where teh first character is printed
+after which the next character is printed at `0xb8002`, this is because each character is 2 bytes 
+long.
+
+```asm
+[bits 32]
+
+VIDEO_MEMORY equ 0xb8000
+COLOR_CODE equ 0x60 ; black on orange
+
+pm_print:
+  pusha
+  mov edx, VIDEO_MEMORY
+
+.pm_print_loop:
+
+  mov al, [ebx] ; ebx points to the character we want to print
+  cmp al, 0x0
+  je .pm_print_done
+
+  mov ah, COLOR_CODE ; printing colors
+  ; now ax contains information about what character to print and in what color
+  mov [edx], ax ; move the character 
+  inc ebx 
+  add edx, 2
+  jmp .pm_print_loop
+
+.pm_print_done:
+
+  popa 
+  ret
+
+protected_mode_main:
+ 
+  mov ebx, pm_message
+  call pm_print
+
+  jmp $ ; infinite loop at the start of the main function in protected mode
+
+pm_message:
+  db "Hello World!!", 0
+```
+
+# Kernel development
+
+Now we define at what address the kernel starts. \
+
+```asm
+KERNEL_LOCATION equ 0x1000
+```
+
+
