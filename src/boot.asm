@@ -40,8 +40,14 @@ rm_print:
 ;
 
 real_mode_main:
+
+  ; enter text mode => clear the screen
+  mov ah, 0x0
+  mov al, 0x3
+  int 0x10
+
   mov bx, rm_message ; move the message to bx register as a paramter to the print function
-  call rm_print 
+  ; call rm_print 
 
   cli ; clear all the interrupts
   lgdt [gdt_descriptor] ; load the global descriptor table
@@ -119,7 +125,26 @@ rm_message: ; the variable only points to the character 'H'
 [bits 32]
 
 VIDEO_MEMORY equ 0xb8000
-WHITE_ON_BLACK equ 0x01
+COLOR_CODE equ 0x60
+
+; color coding
+;
+; 0 -> black
+; 1 -> blue
+; 2 -> green
+; 3 -> cyan
+; 4 -> red
+; 5 -> pink
+; 6 -> orange
+; 7 -> gray
+; 8 -> dark gray
+; 9 -> light blue
+; a -> light green
+; b -> light cyan
+; c -> light red
+; d -> light pink
+; e -> light yellow
+; f -> white
 
 pm_print:
   pusha
@@ -131,10 +156,11 @@ pm_print:
   cmp al, 0x0
   je .pm_print_done
 
-  mov ah, WHITE_ON_BLACK ; printing colors
+  mov ah, COLOR_CODE ; printing colors
   ; now ax contains information about what character to print and in what color
   mov [edx], ax ; move the character 
   inc ebx 
+  add edx, 2
   jmp .pm_print_loop
 
 .pm_print_done:
@@ -150,8 +176,7 @@ protected_mode_main:
   jmp $ ; infinite loop at the start of the main function in protected mode
 
 pm_message:
-  db "TE", 0
+  db "Hello World!!", 0
 
 times (510 - ($-$$)) db 0
 dw 0xaa55
-

@@ -322,8 +322,3 @@ protected_mode_main:
   jpm $ ; infinite loop at the start of the main function in protected mode
 ```
 
-### Printing in protected mode
-
-
-
-
