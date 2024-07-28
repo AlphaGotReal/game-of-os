@@ -371,10 +371,13 @@ pm_message:
 
 # Kernel development
 
-Now we define at what address the kernel starts. \
-
+Now we define at what address the kernel starts. 
 ```asm
 KERNEL_LOCATION equ 0x1000
 ```
+## Reading more sectors of the disk using BIOS
+
+Since the kernel cannot fit into the first sector of the disk, will have to load more sectors into
+the memory.
 
 

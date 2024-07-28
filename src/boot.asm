@@ -1,6 +1,8 @@
 [bits 16]
 [org 0x7c00]
 
+KERNEL_LOCATION equ 0x1000
+
 ; define the position of the code and data segments with respect to the gdt_begin
 ; equ is used to define constants
 CODE_SEGMENT equ code_descriptor - gdt_begin
@@ -41,6 +43,32 @@ rm_print:
 
 real_mode_main:
 
+  mov [BOOT_DISK], dl
+
+  ; reset the segments variables
+  xor ax, ax ; clear ax                         
+  mov es, ax 
+  mov ds, ax
+  mov bp, 0x8000
+  mov sp, bp
+
+  ; read more sectors of the disk
+  ; specify the following
+  ; what disk to read? 
+  ; CHS addressing
+  ; how many sectors to read
+  ; where to load them -> KERNEL_LOCATION
+  mov bx, KERNEL_LOCATION ; read to KERNEL_LOCATION
+  mov dh, 2
+
+  mov ah, 0x2 ; tells the CPU to read more sectors
+  mov al, 1 ; this is the number of sectors to read
+  mov ch, 0 ; cylinder number
+  mov cl, 2 ; sector number
+  mov dh, 0 ; head number
+  mov dl, [BOOT_DISK] ; disk number, same as the first one
+  int 0x13
+
   ; enter text mode => clear the screen
   mov ah, 0x0
   mov al, 0x3
@@ -60,6 +88,9 @@ real_mode_main:
   jmp CODE_SEGMENT:protected_mode_main
   
   jmp $ ; run the infinite loop after performing all operations
+
+BOOT_DISK: 
+  db 0
 
 ;
 ; the global descriptor table 
@@ -162,14 +193,21 @@ pm_print:
   ret
 
 protected_mode_main:
- 
-  mov ebx, pm_message
-  call pm_print
 
-  jmp $ ; infinite loop at the start of the main function in protected mode
-
-pm_message:
-  db "Hello World!!", 0
+  ; initial setup for all the segment registers for data
+  mov ax, DATA_SEGMENT
+  mov ds, ax
+  mov ss, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  mov ebp, 0x90000 ; 32 bit base pointer
+  mov esp, ebp
+  
+  jmp KERNEL_LOCATION ; make a far jump to kernel location
 
 times (510 - ($-$$)) db 0
 dw 0xaa55
+
+
+
